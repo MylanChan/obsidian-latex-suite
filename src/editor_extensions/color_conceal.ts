@@ -114,6 +114,26 @@ export function appendColorTextConceal(
 				colorGroups.push([suffix]);
 				hiddenRanges.push(prefix, suffix);
 			} else {
+				// \color{#HEX}{body} is frequently used as a local color wrapper.
+				// Preserve the body and conceal both wrapper braces, just like \textcolor.
+				let bodyOpening = afterArgument;
+				while (source[bodyOpening] === " " || source[bodyOpening] === "\t") bodyOpening++;
+				const bodyClosing = matchingBrace(source, bodyOpening);
+				if (bodyClosing !== null) {
+					const bodyStart = bound.inner_start + bodyOpening + 1;
+					const bodyEnd = bound.inner_start + bodyClosing;
+					const prefix = hiddenSyntax(start, bodyStart);
+					const suffix = hiddenSyntax(bodyEnd, bodyEnd + 1);
+					colorGroups.push([prefix]);
+					const mark = coloredText(bodyStart, bodyEnd, command.hex);
+					if (mark) colorGroups.push([mark]);
+					colorGroups.push([suffix]);
+					hiddenRanges.push(prefix, suffix);
+					continue;
+				}
+
+				// Plain \color{#HEX} declarations affect subsequent math tokens
+				// until the next command at the same nesting level.
 				let styleEnd = scopeEnd(source, command.index, afterArgument);
 				const commandDepth = braceDepth(source, command.index);
 				for (const later of commands) {

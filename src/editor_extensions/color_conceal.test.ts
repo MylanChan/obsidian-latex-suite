@@ -35,6 +35,38 @@ describe("unfocused LaTeX HEX text color", () => {
 		expect(groups.flat().filter(spec => spec.class === "cm-concealed-color-syntax")).toHaveLength(2);
 	});
 
+	it("hides both braces in \\color{#HEX}{body} without coloring the next token", () => {
+		const source = "$\\color{#D99694}{v}=z$";
+		const groups = conceal(source);
+		const specs = groups.flat();
+		const marks = specs.filter(spec => spec.marks);
+		expect(marks).toHaveLength(1);
+		expect(source.slice(marks[0]!.start, marks[0]!.end)).toBe("v");
+		expect(marks[0]!.style).toBe("color: #D99694;");
+		const hidden = specs.filter(spec => spec.class === "cm-concealed-color-syntax");
+		expect(hidden.map(spec => source.slice(spec.start, spec.end))).toEqual([
+			"\\color{#D99694}{", "}",
+		]);
+		expect(source.slice(hidden.at(-1)!.end)).toBe("=z$");
+	});
+
+	it("keeps nested math widgets intact in a local color wrapper", () => {
+		const source = "$\\color{#548DD4}{\\overset{\\text{Eigenvalue}}{\\lambda}}$";
+		const baseStart = source.indexOf("\\overset");
+		const baseEnd = source.lastIndexOf("}");
+		const original: ConcealSpec[] = [[{
+			start: baseStart, end: baseEnd,
+			text: "λ\u001fEigenvalue", class: "cm-concealed-overset",
+		}]];
+		const groups = conceal(source, original);
+		expect(groups.some(g => g[0]?.class === "cm-concealed-overset")).toBe(true);
+		expect(groups.flat().filter(x => x.class === "cm-concealed-color-syntax")).toHaveLength(2);
+		expect(groups.flat().filter(x => x.marks)).toHaveLength(1);
+		const mark = groups.flat().find(x => x.marks)!;
+		expect(mark.start).toBe(baseStart);
+		expect(mark.end).toBe(baseEnd);
+	});
+
 	it("styles the following math content for a color declaration", () => {
 		const source = "$\\color{#548DD4}x+y$";
 		expect(conceal(source)).toEqual([
@@ -90,7 +122,7 @@ describe("unfocused LaTeX HEX text color", () => {
 		]);
 		const syntaxes = groups.filter(group => group[0]?.class === "cm-concealed-color-syntax");
 		const colorMarks = groups.filter(group => group[0]?.class === "cm-concealed-text-color");
-		expect(syntaxes).toHaveLength(5);
+		expect(syntaxes).toHaveLength(8);
 		expect(colorMarks).toHaveLength(4);
 		const caretOnFinalE = source.lastIndexOf("e\n");
 		expect(syntaxes.every(group => group.every(spec =>

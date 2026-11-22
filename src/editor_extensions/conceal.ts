@@ -44,7 +44,7 @@ class ConcealWidget extends WidgetType {
 	private readonly className: string;
 	private readonly elementType: string;
 
-	constructor(readonly symbol: string, className?: string, elementType?: string) {
+	constructor(readonly symbol: string, className?: string, elementType?: string, readonly color?: string) {
 		super();
 
 		this.className = className ? className : "";
@@ -52,12 +52,13 @@ class ConcealWidget extends WidgetType {
 	}
 
 	eq(other: ConcealWidget) {
-		return ((other.symbol == this.symbol) && (other.className === this.className) && (other.elementType === this.elementType));
+		return ((other.symbol == this.symbol) && (other.className === this.className) && (other.elementType === this.elementType) && (other.color === this.color));
 	}
 
 	toDOM() {
 		const span = createElement(this.elementType);
 		span.className = "cm-math " + this.className;
+		if (this.color) span.style.color = this.color;
 		if (this.className === "cm-concealed-overset" || this.className === "cm-concealed-underset") {
 			const separator = this.symbol.indexOf("\u001f");
 			const base = createElement("span");
@@ -249,6 +250,19 @@ function determineAction(
 function buildDecoSet(concealments: Concealment[]) {
 	const decos: Range<Decoration>[] = []
 	const outerDecos: Range<Decoration>[] = []
+	// Outer CodeMirror marks can style ordinary text, but not content replaced
+	// by a Widget. Feed the narrowest enclosing color mark into that Widget.
+	const colorMarks = concealments
+		.filter(concealment => concealment.enable)
+		.flatMap(concealment => concealment.spec)
+		.filter(spec => spec.marks && spec.class === "cm-concealed-text-color" && !!spec.style);
+	const widgetColor = (replace: Replacement) => {
+		const enclosing = colorMarks
+			.filter(mark => mark.start <= replace.start && replace.end <= mark.end)
+			.sort((a, b) => (a.end - a.start) - (b.end - b.start))[0];
+		return /^color:\s*(#[\da-f]{6}|[a-z]+);?$/i.exec(enclosing?.style?.trim() ?? "")?.[1];
+	};
+
 
 	for (const conc of concealments) {
 		if (!conc.enable) continue;
@@ -284,6 +298,7 @@ function buildDecoSet(concealments: Concealment[]) {
 							replace.text,
 							replace.class,
 							replace.elementType,
+							widgetColor(replace),
 						),
 						inclusiveStart,
 						inclusiveEnd,
