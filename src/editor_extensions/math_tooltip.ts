@@ -8,6 +8,7 @@ import { cmDarkClass, cmLightClass, createElement, getTargetElementFromMouseEven
 import { isBoundMultiline } from "src/utils/editor_utils";
 import { getMathBoundsPlugin } from "src/editor_context/mathbounds";
 import type { LatexSuiteCMSettings } from "src/settings/settings";
+import { chooseMathPreviewPlacement } from "./math_tooltip_placement";
 
 type MathTooltip = {
 	equation: string,
@@ -315,23 +316,36 @@ export function handleMathTooltip(update: ViewUpdate) {
 			})
 		}
 	}
+	const isEqnMultiline = isBoundMultiline(update.view, eqnBounds);
+	const caretAnchor = Math.max(eqnBounds.inner_start, Math.min(pos, eqnBounds.inner_end));
 	const oldTooltips = update.state.field(cursorTooltipField);
-	// a little optimization: if the tooltip is currently shown and the equation with decorations is the same as the one in the tooltip, we don't need to update it.
 	if (
 		oldTooltips.length === 1 &&
 		oldTooltips[0]!.equation === eqnWithDecorations &&
 		oldTooltips[0]!.bounds.inner_start === eqnBounds.inner_start &&
-		oldTooltips[0]!.bounds.inner_end === eqnBounds.inner_end
+		oldTooltips[0]!.bounds.inner_end === eqnBounds.inner_end &&
+		(!isEqnMultiline || oldTooltips[0]!.pos === caretAnchor)
 	) {
 		return;
 	}
-	const isEqnMultiline = isBoundMultiline(update.view, eqnBounds);
 
-	const above = settings.mathPreviewPositionIsAbove;
+	const editorWindow = update.view.dom.ownerDocument.defaultView;
+	const viewport = editorWindow?.visualViewport;
+	const viewportTop = viewport?.offsetTop ?? 0;
+	const viewportBottom = viewportTop + (viewport?.height ?? editorWindow?.innerHeight ?? 800);
+	const caretCoords = update.view.coordsAtPos(caretAnchor) ?? update.view.dom.getBoundingClientRect();
+	const placement = chooseMathPreviewPlacement(
+		caretCoords,
+		{top: viewportTop, bottom: viewportBottom},
+		settings.mathPreviewPositionIsAbove,
+		isEqnMultiline,
+	);
+	const above = placement.above;
 	const create: Tooltip["create"] = (view) => {
 		const dom = createElement("div")
 		dom.addClass("cm-tooltip-cursor");
 		dom.addClass(above ? "cm-tooltip-above" : "cm-tooltip-below");
+		dom.style.maxHeight = `${placement.maxHeight}px`;
 		// there is a plugin that can hide > in block math mode in the output.
 		if (ctx.mode.blockMath) {
 			// check if every newline is followed by the same amount of > as the line of the opening delimiters
@@ -379,7 +393,7 @@ export function handleMathTooltip(update: ViewUpdate) {
 
 	if (isEqnMultiline) {
 		newTooltips = [{
-			pos: above ? eqnBounds.inner_start : eqnBounds.inner_end,
+			pos: caretAnchor,
 			above: above,
 			strictSide: true,
 			arrow: true,
@@ -701,23 +715,21 @@ export const cursorTooltipBaseTheme = EditorView.baseTheme({
 			padding: "2px !important",
 		},
 		
-		// CM6 puts the top of the tooltip higher than what's viewable (negative top value),
-		// so to compensate for this, we align the content to the bottom of the tooltip container,
-		// and limit the height.
-		"&.cm-tooltip-above": {
-			display: "flex",
-		},
-		"&.cm-tooltip-above > .MathJax": {
+		maxWidth: "calc(100vw - 24px)",
+		maxHeight: "70vh",
+		boxSizing: "border-box",
+		display: "flex",
+		flexDirection: "column",
+		overflow: "hidden",
+		"& > .MathJax": {
+			display: "block",
+			minWidth: "0",
+			minHeight: "0",
+			maxWidth: "100%",
+			maxHeight: "100%",
+			overflowX: "auto",
 			overflowY: "auto",
-			scrollbarWidth: "none",
-			// maxHeight: "80%",
-			// display: "inline-block",
-			// alignSelf: "flex-end",
-		},
-		"&.cm-tooltip-below > .MathJax": {
-			overflowY: "auto",
-			maxHeight: "90%",
-			scrollbarWidth: "none",
+			scrollbarWidth: "thin",
 		},
 	},
 	[`.${HIGHLIGHT_CLASS}`]: {
@@ -733,15 +745,17 @@ export const cursorTooltipBaseTheme = EditorView.baseTheme({
 
 
 const createTooltipConfig = (doc: Document) => Prec.lowest(tooltips({
-	position: "absolute",
+	position: "fixed",
 	tooltipSpace() {
-		const bodyRect = doc.body.getBoundingClientRect();
+		const visualViewport = doc.defaultView?.visualViewport;
+		const top = visualViewport?.offsetTop ?? 0;
+		const left = visualViewport?.offsetLeft ?? 0;
 		return {
-			bottom: bodyRect.bottom,
-			left: bodyRect.left,
-			right: bodyRect.right,
-			top: bodyRect.top,
-		}
+			top,
+			left,
+			right: left + (visualViewport?.width ?? doc.documentElement.clientWidth),
+			bottom: top + (visualViewport?.height ?? doc.documentElement.clientHeight),
+		};
 	},
 	parent: doc.body,
 }));
