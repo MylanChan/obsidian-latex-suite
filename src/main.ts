@@ -38,6 +38,7 @@ import { serializeSnippetLike } from "./snippets/snippets";
 import { mathlessArgsSchema, type MathlessMacroArgs } from "./editor_context/default_text_areas";
 import { renderHtml } from "./settings/settings_tab2";
 import { LatexColorSuggest } from "./features/color_palette";
+import { ClosedLatexColorPicker } from "./features/closed_color_picker";
 
 export default class LatexSuitePlugin extends Plugin implements LatexSuitePluginPublicApi {
 	settings: LatexSuitePluginSettings = EMPTY_SETTINGS;
@@ -159,7 +160,9 @@ export default class LatexSuitePlugin extends Plugin implements LatexSuitePlugin
 
 		// Register Latex Suite extensions and optional editor extensions for editor enhancements
 		this.registerEditorExtension(this.editorExtensions);
-		this.registerEditorSuggest(new LatexColorSuggest(this.app));
+		const colorSuggest = new LatexColorSuggest(this.app);
+		this.registerEditorSuggest(colorSuggest);
+		new ClosedLatexColorPicker(this, colorSuggest);
 
 		// Watch for changes to the snippet variables and snippets files
 		this.watchFiles();

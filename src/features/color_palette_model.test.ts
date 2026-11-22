@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cssColorToHex, findColorArgument, LATEX_COLOR_CHOICES } from "./color_palette_model";
+import { cssColorToHex, findClosedColorArgument, findColorArgument, LATEX_COLOR_CHOICES } from "./color_palette_model";
 
 describe("LaTeX palette", () => {
 	it("keeps the eight requested presets", () => {
@@ -18,6 +18,14 @@ describe("LaTeX palette", () => {
 	it("ignores escaped commands and outside caret", () => {
 		expect(findColorArgument("\\\\color{}", 9)).toBeNull();
 		expect(findColorArgument("\\color{red}", 11)).toBeNull();
+	});
+
+	it("opens for completed paired braces without moving the cursor", () => {
+		expect(findClosedColorArgument("\\color{}", 7)?.from).toBe(7);
+		expect(findClosedColorArgument("\\color{}", 8)?.to).toBe(7);
+		expect(findClosedColorArgument("\\textcolor{}", 11)?.command).toBe("textcolor");
+		expect(findClosedColorArgument("\\textcolor{}", 12)?.closed).toBe(true);
+		expect(findClosedColorArgument("\\color{red}", 11)).toBeNull();
 	});
 	it("converts RGB and HEX values", () => {
 		expect(cssColorToHex("rgb(17, 34, 51)")).toBe("#112233");

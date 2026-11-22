@@ -58,3 +58,16 @@ export function findColorArgument(line: string, caret: number): ColorArgument | 
 	}
 	return found;
 }
+
+/** Detect paired color groups, also accepting a caret just after an empty }. */
+export function findClosedColorArgument(line: string, caret: number): ColorArgument | null {
+	const inside = findColorArgument(line, caret);
+	if (inside?.closed) return inside;
+	if (caret > 0 && line[caret - 1] === "}") {
+		const beforeClose = findColorArgument(line, caret - 1);
+		if (beforeClose?.closed && beforeClose.from === beforeClose.to && beforeClose.to === caret - 1)
+			return beforeClose;
+	}
+	return null;
+}
+

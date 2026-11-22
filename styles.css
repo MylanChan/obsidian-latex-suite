@@ -1,5 +1,50 @@
 /* stylelint-disable selector-class-pattern */
 
+/* Small 4x2 palette for already-closed LaTeX color arguments. */
+.latex-suite-color-menu {
+	position: fixed;
+	z-index: 10000;
+	box-sizing: border-box;
+	width: 184px;
+	max-width: calc(100vw - 16px);
+	padding: 9px;
+	border-radius: 10px;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	color: var(--text-normal);
+	box-shadow: var(--shadow-l, 0 8px 24px rgba(0, 0, 0, 0.2));
+	font-family: var(--font-interface);
+}
+.latex-suite-color-title {
+	margin-bottom: 7px;
+	font-size: var(--font-ui-smaller);
+}
+.latex-suite-color-grid {
+	display: grid;
+	grid-template-columns: repeat(4, 32px);
+	justify-content: center;
+	gap: 7px;
+}
+.latex-suite-color-swatch {
+	display: block;
+	justify-self: center;
+	box-sizing: border-box;
+	width: 28px;
+	height: 28px;
+	min-width: 28px;
+	min-height: 28px;
+	padding: 0;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 50%;
+	cursor: pointer;
+}
+.latex-suite-color-swatch:hover,
+.latex-suite-color-swatch.is-selected {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: 1px;
+}
+
+
 /* Compact native Obsidian autocomplete for incomplete LaTeX color arguments. */
 .latex-suite-color-suggestion {
 	display: flex;
