@@ -8,6 +8,7 @@ import { cumulativeSum, hasOwn } from "src/utils/editor_utils";
 import { EquationText, iterateTreeCursor } from "src/utils/tokenizer";
 import { getMathBoundsPlugin } from "src/editor_context/mathbounds";
 import { latex } from "src/parser/latex-terms";
+import { parseStackedConceal } from "./stacked_conceal";
 
 
 
@@ -720,6 +721,21 @@ function handleAllSymbols({cursor, doc, macro, maps}: MacroHandlerOptions): Hand
 	return handled(spec);
 }
 
+function handleStackedMacro({cursor, doc, maps, macro}: MacroHandlerOptions): HandleConcealResult {
+	const start = cursor.node.from;
+	const result = parseStackedConceal(doc.slice(start, doc.to), macro as "overset" | "underset", maps);
+	if (!result) return handled([]);
+	const end = start + result.length;
+	doc.moveTo(cursor, end, 1);
+	doc.skipCursorMove = true;
+	return handled([{
+		start,
+		end,
+		text: result.base + "\u001f" + result.annotation,
+		class: macro === "overset" ? "cm-concealed-overset" : "cm-concealed-underset",
+	}]);
+}
+
 const fractionsMacro = ["frac", "dfrac", "tfrac", "gfrac"];
 const braketMacro = ["bra", "ket", "braket"];
 
@@ -764,6 +780,8 @@ export function createMacroMap(maps: ConcealMapping) : MacroHandlerMap {
 	for (const macro of Object.keys(maps.ALL_SYMBOLS)) {
 		macroMap[macro] = handleAllSymbols;
 	}
+	macroMap.overset = handleStackedMacro;
+	macroMap.underset = handleStackedMacro;
 	for (const macro of Object.keys(maps.function_macros)) {
 		delete macroMap[macro];
 	}

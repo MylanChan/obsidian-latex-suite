@@ -1,5 +1,14 @@
 /* stylelint-disable selector-class-pattern */
 
+/* Readable annotations for LaTeX \overset and \underset in Live Preview. */
+.cm-math.cm-concealed-overset,
+.cm-math.cm-concealed-underset { white-space: nowrap; }
+.cm-math.cm-concealed-overset > sup,
+.cm-math.cm-concealed-underset > sub { font-size: 0.72em; line-height: 0; }
+.cm-math.cm-concealed-overset > sup { vertical-align: super; }
+.cm-math.cm-concealed-underset > sub { vertical-align: sub; }
+
+
 /* Settings panel */
 
 .setting-item.hidden {

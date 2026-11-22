@@ -56,7 +56,16 @@ class ConcealWidget extends WidgetType {
 	toDOM() {
 		const span = createElement(this.elementType);
 		span.className = "cm-math " + this.className;
-		span.textContent = this.symbol;
+		if (this.className === "cm-concealed-overset" || this.className === "cm-concealed-underset") {
+			const separator = this.symbol.indexOf("\u001f");
+			const base = createElement("span");
+			const script = createElement(this.className === "cm-concealed-overset" ? "sup" : "sub");
+			base.textContent = this.symbol.slice(0, separator);
+			script.textContent = this.symbol.slice(separator + 1);
+			span.append(base, script);
+		} else {
+			span.textContent = this.symbol;
+		}
 		return span;
 	}
 
