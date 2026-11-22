@@ -7,7 +7,7 @@ import { debounce, livePreviewState } from "src/editor_extensions/obsidian_utils
 import { isTempKeypressUpdate } from "src/snippets/snippet_management";
 import { createElement } from "./obsidian_utils";
 import { getMathBoundsPlugin } from "../editor_context/mathbounds";
-import { appendColorSwatches } from "./color_swatch";
+import { appendColorTextConceal } from "./color_conceal";
 
 export type Replacement = {
 	start: number,
@@ -58,14 +58,6 @@ class ConcealWidget extends WidgetType {
 	toDOM() {
 		const span = createElement(this.elementType);
 		span.className = "cm-math " + this.className;
-		if (this.className === "cm-concealed-color-swatch" && /^#[\da-fA-F]{6}$/.test(this.symbol)) {
-			span.style.setProperty("--latex-suite-swatch-color", this.symbol);
-			span.setAttribute("title", "LaTeX color " + this.symbol);
-			span.setAttribute("role", "img");
-			span.setAttribute("aria-label", "LaTeX color " + this.symbol);
-			return span;
-		}
-
 		if (this.className === "cm-concealed-overset" || this.className === "cm-concealed-underset") {
 			const separator = this.symbol.indexOf("\u001f");
 			const base = createElement("span");
@@ -323,16 +315,18 @@ function buildAtomicRanges(concealments: Concealment[]) {
 	for (let i = 0; i < repls.length; i++) {
 		const replace = repls[i]!;
 		const nextReplace = repls[i + 1];
-		if (replace.text === "") {
+		if (replace.marks) {
+			// Pure style marks must never turn colored text into an atomic range.
+			continue;
+		} else if (replace.class === "cm-concealed-color-syntax") {
+			// Invisible LaTeX syntax must not absorb the first body character.
+			builder.add(replace.start, replace.end, fakeval);
+		} else if (replace.text === "") {
 			if (nextReplace && replace.end == nextReplace.start && !nextReplace.marks) {
 				builder.add(replace.start, nextReplace.end, fakeval);
 				i++;
 			} else {
 				builder.add(replace.start, replace.end + 1, fakeval);
-			}
-		} else if (replace.marks) {
-			if (nextReplace && nextReplace.text === "" && replace.end == nextReplace.start) {
-				i++;
 			}
 		} else {
 			builder.add(replace.start, replace.end, fakeval);
@@ -497,7 +491,7 @@ export class Conceal implements PluginValue {
 				this.cached_equations,
 				this.mappingInfo,
 			);
-			const concealSpecs = appendColorSwatches(
+			const concealSpecs = appendColorTextConceal(
 				specs,
 				(from, to) => update.view.state.doc.sliceString(from, to),
 				getMathBoundsPlugin(update.view).mathBounds,

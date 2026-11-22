@@ -1,17 +1,11 @@
 /* stylelint-disable selector-class-pattern */
 
-/* Color is read dynamically from the original LaTeX HEX argument. */
-.cm-math.cm-concealed-color-swatch {
-	display: inline-block;
-	box-sizing: border-box;
-	width: 0.88em;
-	height: 0.88em;
-	margin-inline: 0.09em;
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 50%;
-	vertical-align: -0.08em;
-	background-color: var(--latex-suite-swatch-color, transparent);
-	cursor: text;
+/* In Live Preview, HEX colors style their expression, without a visible circle.
+   The original LaTeX returns when the caret enters the colored expression. */
+.cm-math.cm-concealed-color-syntax {
+	display: inline;
+	font-size: 0;
+	line-height: 0;
 }
 
 
