@@ -6,6 +6,8 @@ import { conceal, type ConcealCachedEquations, type MappingInfo } from "./concea
 import { debounce, livePreviewState } from "src/editor_extensions/obsidian_utils";
 import { isTempKeypressUpdate } from "src/snippets/snippet_management";
 import { createElement } from "./obsidian_utils";
+import { getMathBoundsPlugin } from "../editor_context/mathbounds";
+import { appendColorSwatches } from "./color_swatch";
 
 export type Replacement = {
 	start: number,
@@ -56,6 +58,14 @@ class ConcealWidget extends WidgetType {
 	toDOM() {
 		const span = createElement(this.elementType);
 		span.className = "cm-math " + this.className;
+		if (this.className === "cm-concealed-color-swatch" && /^#[\da-fA-F]{6}$/.test(this.symbol)) {
+			span.style.setProperty("--latex-suite-swatch-color", this.symbol);
+			span.setAttribute("title", "LaTeX color " + this.symbol);
+			span.setAttribute("role", "img");
+			span.setAttribute("aria-label", "LaTeX color " + this.symbol);
+			return span;
+		}
+
 		if (this.className === "cm-concealed-overset" || this.className === "cm-concealed-underset") {
 			const separator = this.symbol.indexOf("\u001f");
 			const base = createElement("span");
@@ -482,10 +492,15 @@ export class Conceal implements PluginValue {
 		if (!update.docChanged && !update.viewportChanged) {
 			this.updateFromConcealSpecs(this.concealSpecs, update);
 		} else {
-			const { specs: concealSpecs, cached_equations } = conceal(
+			const { specs, cached_equations } = conceal(
 				update.view,
 				this.cached_equations,
 				this.mappingInfo,
+			);
+			const concealSpecs = appendColorSwatches(
+				specs,
+				(from, to) => update.view.state.doc.sliceString(from, to),
+				getMathBoundsPlugin(update.view).mathBounds,
 			);
 			this.cached_equations = cached_equations;
 			this.concealSpecs = concealSpecs;

@@ -1,5 +1,20 @@
 /* stylelint-disable selector-class-pattern */
 
+/* Color is read dynamically from the original LaTeX HEX argument. */
+.cm-math.cm-concealed-color-swatch {
+	display: inline-block;
+	box-sizing: border-box;
+	width: 0.88em;
+	height: 0.88em;
+	margin-inline: 0.09em;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 50%;
+	vertical-align: -0.08em;
+	background-color: var(--latex-suite-swatch-color, transparent);
+	cursor: text;
+}
+
+
 /* Small 4x2 palette for already-closed LaTeX color arguments. */
 .latex-suite-color-menu {
 	position: fixed;
