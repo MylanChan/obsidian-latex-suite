@@ -1,5 +1,23 @@
 /* stylelint-disable selector-class-pattern */
 
+/* Compact native Obsidian autocomplete for incomplete LaTeX color arguments. */
+.latex-suite-color-suggestion {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+.latex-suite-color-suggestion-swatch {
+	display: inline-block;
+	width: 17px;
+	height: 17px;
+	flex: 0 0 17px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 50%;
+}
+.latex-suite-color-suggestion-name { flex: 1; }
+.latex-suite-color-suggestion-hex { font-size: 11px; opacity: 0.72; }
+
+
 /* Readable annotations for LaTeX \overset and \underset in Live Preview. */
 
 /* SVG braces expand with their LaTeX expression, with optional labels. */
