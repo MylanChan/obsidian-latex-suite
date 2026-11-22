@@ -534,7 +534,12 @@ export class Conceal implements PluginValue {
 			);
 			const cursorPosType = determineCursorPosType(update.view, spec, this.lineWise, oldConcealment?.cursorPosType);
 
-			const concealAction = determineAction(
+			// A color mark is visual styling, not editable LaTeX syntax. Keep it
+			// active when typing in the expression; only the hidden command
+			// itself should reveal under the caret.
+			const isColorMark = spec.length === 1 &&
+				spec[0]?.marks === true && spec[0].class === "cm-concealed-text-color";
+			const concealAction = isColorMark ? "conceal" : determineAction(
 				oldConcealment?.cursorPosType, cursorPosType, this.mousedown, this.delayEnabled
 			);
 			revealed = revealed || concealAction === "reveal";

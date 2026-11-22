@@ -11,11 +11,11 @@ function conceal(source: string, original: ConcealSpec[] = [], bounds = [
 describe("unfocused LaTeX HEX text color", () => {
 	it("hides textcolor syntax and colors the body instead of showing a circle", () => {
 		const source = "$\\textcolor{#B2A2C7}{A}$";
-		expect(conceal(source)).toEqual([[
-			{ start: 1, end: 21, text: "", class: "cm-concealed-color-syntax" },
-			{ start: 21, end: 22, text: "", class: "cm-concealed-text-color", marks: true, style: "color: #B2A2C7;" },
-			{ start: 22, end: 23, text: "", class: "cm-concealed-color-syntax" },
-		]]);
+		expect(conceal(source)).toEqual([
+			[{ start: 1, end: 21, text: "", class: "cm-concealed-color-syntax" }],
+			[{ start: 21, end: 22, text: "", class: "cm-concealed-text-color", marks: true, style: "color: #B2A2C7;" }],
+			[{ start: 22, end: 23, text: "", class: "cm-concealed-color-syntax" }],
+		]);
 		expect(conceal(source).flat().some(spec => spec.class === "cm-concealed-color-swatch")).toBe(false);
 	});
 
@@ -37,10 +37,10 @@ describe("unfocused LaTeX HEX text color", () => {
 
 	it("styles the following math content for a color declaration", () => {
 		const source = "$\\color{#548DD4}x+y$";
-		expect(conceal(source)).toEqual([[
-			{ start: 1, end: 16, text: "", class: "cm-concealed-color-syntax" },
-			{ start: 16, end: 19, text: "", class: "cm-concealed-text-color", marks: true, style: "color: #548DD4;" },
-		]]);
+		expect(conceal(source)).toEqual([
+			[{ start: 1, end: 16, text: "", class: "cm-concealed-color-syntax" }],
+			[{ start: 16, end: 19, text: "", class: "cm-concealed-text-color", marks: true, style: "color: #548DD4;" }],
+		]);
 	});
 
 	it("stops color at its scope boundary or at the next same-level color", () => {
@@ -66,6 +66,38 @@ describe("unfocused LaTeX HEX text color", () => {
 		expect(specs.some(spec => spec.class === "cm-concealed-color-swatch")).toBe(false);
 	});
 
+	it("does not reveal a color command when editing its styled expression", () => {
+		const source = "$\\textcolor{#B2A2C7}{\\overset{\\text{Any square matrix}}{A}}$";
+		const groups = conceal(source);
+		const insideBody = source.indexOf("\\overset") + 5;
+		const containsCaret = (group: ConcealSpec) =>
+			group.some(spec => spec.start < insideBody && insideBody < spec.end);
+		const prefix = groups.find(group => group[0]?.class === "cm-concealed-color-syntax" &&
+			group[0].start === source.indexOf("\\textcolor"))!;
+		const mark = groups.find(group => group[0]?.class === "cm-concealed-text-color")!;
+		expect(containsCaret(prefix)).toBe(false);
+		expect(containsCaret(mark)).toBe(true);
+		expect(prefix).not.toBe(mark);
+	});
+
+	it("keeps every color command concealed while the caret is in another term", () => {
+		const source = "$$\n" +
+			"\\textcolor{#B2A2C7}{\\overset{\\text{Any square matrix}}{A}}" +
+			"\\color{#D99694}{v}=\\color{#548DD4}{\\overset{\\text{Eigenvalue}}{\\lambda}} " +
+			"\\color{#D99694}{\\underset{\\text{Eigenvector}}{v}}\\ne\\n$$";
+		const groups = appendColorTextConceal([], (a, b) => source.slice(a, b), [
+			{ inner_start: 3, inner_end: source.length - 3 },
+		]);
+		const syntaxes = groups.filter(group => group[0]?.class === "cm-concealed-color-syntax");
+		const colorMarks = groups.filter(group => group[0]?.class === "cm-concealed-text-color");
+		expect(syntaxes).toHaveLength(5);
+		expect(colorMarks).toHaveLength(4);
+		const caretOnFinalE = source.lastIndexOf("e\n");
+		expect(syntaxes.every(group => group.every(spec =>
+			!(spec.start < caretOnFinalE && caretOnFinalE < spec.end)))).toBe(true);
+		expect(groups.every(group => group.length === 1)).toBe(true);
+	});
+
 	it("keeps incomplete, invalid, escaped and non-math commands editable", () => {
 		expect(conceal("$\\textcolor{#548DD4}{unfinished$")).toEqual([]);
 		expect(conceal("$\\color{red}$")).toEqual([]);
@@ -75,7 +107,7 @@ describe("unfocused LaTeX HEX text color", () => {
 		const opening = source.indexOf("$");
 		const closing = source.lastIndexOf("$");
 		const groups = conceal(source, [], [{ inner_start: opening + 1, inner_end: closing }]);
-		expect(groups).toHaveLength(1);
+		expect(groups).toHaveLength(2);
 		expect(groups[0]![0]?.start).toBe(source.indexOf("\\color", opening));
 	});
 });

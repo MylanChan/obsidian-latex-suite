@@ -79,8 +79,8 @@ function hiddenSyntax(start: number, end: number): Replacement {
 
 /**
  * Hide LaTeX color syntax when unfocused and style the actual math content.
- * A single ConcealSpec groups syntax and CSS mark; entering the expression
- * restores the original source and enables the existing color picker.
+ * Hide tokens separately from their color marks. Otherwise entering the
+ * styled expression reveals the unrelated color command and nested macros.
  */
 export function appendColorTextConceal(
 	specs: ConcealSpec[],
@@ -97,7 +97,6 @@ export function appendColorTextConceal(
 			const start = bound.inner_start + command.index;
 			const afterArgument = command.index + command.length;
 			const prefixEnd = bound.inner_start + afterArgument;
-			let group: ConcealSpec;
 
 			if (command.macro === "textcolor") {
 				let bodyOpening = afterArgument;
@@ -110,7 +109,9 @@ export function appendColorTextConceal(
 				const prefix = hiddenSyntax(start, bodyStart);
 				const suffix = hiddenSyntax(bodyEnd, bodyEnd + 1);
 				const mark = coloredText(bodyStart, bodyEnd, command.hex);
-				group = mark ? [prefix, mark, suffix] : [prefix, suffix];
+				colorGroups.push([prefix]);
+				if (mark) colorGroups.push([mark]);
+				colorGroups.push([suffix]);
 				hiddenRanges.push(prefix, suffix);
 			} else {
 				let styleEnd = scopeEnd(source, command.index, afterArgument);
@@ -124,10 +125,10 @@ export function appendColorTextConceal(
 				}
 				const prefix = hiddenSyntax(start, prefixEnd);
 				const mark = coloredText(prefixEnd, bound.inner_start + styleEnd, command.hex);
-				group = mark ? [prefix, mark] : [prefix];
+				colorGroups.push([prefix]);
+				if (mark) colorGroups.push([mark]);
 				hiddenRanges.push(prefix);
 			}
-			colorGroups.push(group);
 		}
 	}
 	if (!colorGroups.length) return specs;
