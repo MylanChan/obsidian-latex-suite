@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseStackedConceal } from "./stacked_conceal";
+import { parseBraceConceal, parseStackedConceal } from "./stacked_conceal";
 
 const maps = {
 	greek: { lambda: "λ", mu: "μ" },
@@ -20,3 +20,22 @@ describe("stacked LaTeX concealment", () => {
 		expect(parseStackedConceal("\\underset{label}{", "underset", maps)).toBeNull();
 	});
 });
+
+describe("decorated braces", () => {
+	it("renders overbrace and underbrace without annotations", () => {
+		expect(parseBraceConceal("\\overbrace{a+b}", "overbrace", maps))
+			.toEqual({ length: "\\overbrace{a+b}".length, body: "a+b", annotation: "" });
+		expect(parseBraceConceal("\\underbrace{a+b}", "underbrace", maps)?.body).toBe("a+b");
+	});
+	it("supports text labels and Greek symbols", () => {
+		expect(parseBraceConceal("\\overbrace{a+b}^{\\text{Sum}}", "overbrace", maps))
+			.toEqual({ length: "\\overbrace{a+b}^{\\text{Sum}}".length, body: "a+b", annotation: "Sum" });
+		expect(parseBraceConceal("\\underbrace{\\lambda+\\mu}_{\\text{terms}}", "underbrace", maps)?.body)
+			.toBe("λ+μ");
+	});
+	it("leaves unsupported fraction and incomplete groups visible", () => {
+		expect(parseBraceConceal("\\overbrace{\\frac{a}{b}}", "overbrace", maps)).toBeNull();
+		expect(parseBraceConceal("\\underbrace{a+b}_{", "underbrace", maps)).toBeNull();
+	});
+});
+

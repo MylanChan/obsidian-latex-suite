@@ -1,6 +1,46 @@
 /* stylelint-disable selector-class-pattern */
 
 /* Readable annotations for LaTeX \overset and \underset in Live Preview. */
+
+/* SVG braces expand with their LaTeX expression, with optional labels. */
+.cm-math.cm-concealed-overbrace,
+.cm-math.cm-concealed-underbrace {
+	display: inline-flex;
+	flex-direction: column;
+	align-items: stretch;
+	vertical-align: middle;
+	text-align: center;
+	min-width: 1.4em;
+	white-space: nowrap;
+	line-height: 1.1;
+}
+.cm-math.cm-concealed-overbrace > .latex-suite-brace-content,
+.cm-math.cm-concealed-underbrace > .latex-suite-brace-content {
+	display: block;
+	padding: 0 0.1em;
+	white-space: pre;
+}
+.cm-math.cm-concealed-overbrace > .latex-suite-brace-line,
+.cm-math.cm-concealed-underbrace > .latex-suite-brace-line {
+	display: block;
+	height: 0.45em;
+	width: 100%;
+	line-height: 0;
+}
+.cm-math.cm-concealed-overbrace > .latex-suite-brace-line > svg,
+.cm-math.cm-concealed-underbrace > .latex-suite-brace-line > svg {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+.cm-math.cm-concealed-overbrace > .latex-suite-brace-label,
+.cm-math.cm-concealed-underbrace > .latex-suite-brace-label {
+	display: block;
+	font-size: 0.72em;
+	font-style: normal;
+	white-space: pre;
+}
+
 .cm-math.cm-concealed-overset,
 .cm-math.cm-concealed-underset { white-space: nowrap; }
 .cm-math.cm-concealed-overset > sup,

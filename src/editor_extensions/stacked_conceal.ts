@@ -53,3 +53,61 @@ export function parseStackedConceal(
 	if (!annotation || !base) return null;
 	return { length: baseGroup.end, base, annotation };
 }
+
+export type BraceMacro = "overbrace" | "underbrace";
+
+function readableMathPhrase(text: string, maps: GlyphMap): string | null {
+	let index = 0;
+	let output = "";
+	while (index < text.length) {
+		if (text[index] === "\\") {
+			const label = /^\\(?:text|mathrm|textrm)/.exec(text.slice(index));
+			if (label) {
+				const argument = readGroup(text, index + label[0].length);
+				if (!argument || argument.end <= index) return null;
+				output += argument.text;
+				index = argument.end;
+				continue;
+			}
+			const command = /^\\[A-Za-z]+/.exec(text.slice(index));
+			if (!command) return null;
+			const glyph = readableMathToken(command[0], maps);
+			if (!glyph) return null;
+			output += glyph;
+			index += command[0].length;
+		} else {
+			const segment = /^[^\\{}]+/.exec(text.slice(index));
+			if (!segment || !/^[\p{L}\p{N}+=.,()!?:;/* _-]+$/u.test(segment[0])) return null;
+			output += segment[0];
+			index += segment[0].length;
+		}
+	}
+	return output.length ? output : null;
+}
+
+export function parseBraceConceal(
+	source: string,
+	macro: BraceMacro,
+	maps: GlyphMap,
+): { length: number; body: string; annotation: string } | null {
+	const command = "\\" + macro;
+	if (!source.startsWith(command)) return null;
+	const group = readGroup(source, command.length);
+	if (!group) return null;
+	const body = readableMathPhrase(group.text, maps);
+	if (!body) return null;
+	let end = group.end;
+	while (source[end] === " " || source[end] === "\t") end++;
+	let annotation = "";
+	if (source[end] === (macro === "overbrace" ? "^" : "_")) {
+		const label = readGroup(source, end + 1);
+		if (!label) return null;
+		annotation = readableMathPhrase(label.text, maps) ?? "";
+		if (!annotation) return null;
+		end = label.end;
+	} else {
+		end = group.end;
+	}
+	return { length: end, body, annotation };
+}
+

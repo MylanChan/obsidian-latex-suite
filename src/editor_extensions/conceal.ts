@@ -63,6 +63,38 @@ class ConcealWidget extends WidgetType {
 			base.textContent = this.symbol.slice(0, separator);
 			script.textContent = this.symbol.slice(separator + 1);
 			span.append(base, script);
+		} else if (this.className === "cm-concealed-overbrace" || this.className === "cm-concealed-underbrace") {
+			const over = this.className === "cm-concealed-overbrace";
+			const separator = this.symbol.indexOf("\u001f");
+			const content = createElement("span");
+			content.className = "latex-suite-brace-content";
+			content.textContent = this.symbol.slice(0, separator);
+			const label = createElement("span");
+			label.className = "latex-suite-brace-label";
+			label.textContent = this.symbol.slice(separator + 1);
+			const brace = createElement("span");
+			brace.className = "latex-suite-brace-line";
+			const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+			svg.setAttribute("viewBox", "0 0 100 12");
+			svg.setAttribute("preserveAspectRatio", "none");
+			svg.setAttribute("aria-hidden", "true");
+			const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+			path.setAttribute("d", over
+				? "M0 11 C8 11 8 5 16 5 L42 5 Q49 5 50 0 Q51 5 58 5 L84 5 C92 5 92 11 100 11"
+				: "M0 1 C8 1 8 7 16 7 L42 7 Q49 7 50 12 Q51 7 58 7 L84 7 C92 7 92 1 100 1");
+			path.setAttribute("fill", "none");
+			path.setAttribute("stroke", "currentColor");
+			path.setAttribute("stroke-width", "1.5");
+			path.setAttribute("vector-effect", "non-scaling-stroke");
+			svg.appendChild(path);
+			brace.appendChild(svg);
+			if (over) {
+				if (label.textContent) span.appendChild(label);
+				span.append(brace, content);
+			} else {
+				span.append(content, brace);
+				if (label.textContent) span.appendChild(label);
+			}
 		} else {
 			span.textContent = this.symbol;
 		}

@@ -8,7 +8,7 @@ import { cumulativeSum, hasOwn } from "src/utils/editor_utils";
 import { EquationText, iterateTreeCursor } from "src/utils/tokenizer";
 import { getMathBoundsPlugin } from "src/editor_context/mathbounds";
 import { latex } from "src/parser/latex-terms";
-import { parseStackedConceal } from "./stacked_conceal";
+import { parseBraceConceal, parseStackedConceal } from "./stacked_conceal";
 
 
 
@@ -736,6 +736,22 @@ function handleStackedMacro({cursor, doc, maps, macro}: MacroHandlerOptions): Ha
 	}]);
 }
 
+
+function handleBraceMacro({cursor, doc, maps, macro}: MacroHandlerOptions): HandleConcealResult {
+	const start = cursor.node.from;
+	const result = parseBraceConceal(doc.slice(start, doc.to), macro as "overbrace" | "underbrace", maps);
+	if (!result) return handled([]);
+	const end = start + result.length;
+	doc.moveTo(cursor, end, 1);
+	doc.skipCursorMove = true;
+	return handled([{
+		start,
+		end,
+		text: result.body + "\u001f" + result.annotation,
+		class: macro === "overbrace" ? "cm-concealed-overbrace" : "cm-concealed-underbrace",
+	}]);
+}
+
 const fractionsMacro = ["frac", "dfrac", "tfrac", "gfrac"];
 const braketMacro = ["bra", "ket", "braket"];
 
@@ -782,6 +798,8 @@ export function createMacroMap(maps: ConcealMapping) : MacroHandlerMap {
 	}
 	macroMap.overset = handleStackedMacro;
 	macroMap.underset = handleStackedMacro;
+	macroMap.overbrace = handleBraceMacro;
+	macroMap.underbrace = handleBraceMacro;
 	for (const macro of Object.keys(maps.function_macros)) {
 		delete macroMap[macro];
 	}
