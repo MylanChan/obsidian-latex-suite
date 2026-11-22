@@ -98,22 +98,22 @@ export class ClosedLatexColorPicker {
 	}
 
 	private show() {
-		const root = document.createElement("div");
+		const root = createDiv();
 		root.className = "latex-suite-color-menu";
 		root.setAttribute("role", "dialog");
 		root.setAttribute("aria-label", "LaTeX color");
 		root.addEventListener("mousedown", event => event.preventDefault());
-		const title = document.createElement("div");
+		const title = createDiv();
 		title.className = "latex-suite-color-title";
 		title.textContent = "LaTeX color";
 		root.appendChild(title);
-		const grid = document.createElement("div");
+		const grid = createDiv();
 		grid.className = "latex-suite-color-grid";
 		const initial = this.target!.editor.getLine(this.target!.line)
 			.slice(this.target!.group.from, this.target!.group.to).toUpperCase();
 		this.index = Math.max(0, LATEX_COLOR_CHOICES.findIndex(c => resolveColorHex(c.value) === initial));
 		this.buttons = LATEX_COLOR_CHOICES.map(choice => {
-			const button = document.createElement("button");
+			const button = createEl("button");
 			button.type = "button";
 			button.className = "latex-suite-color-swatch";
 			button.style.backgroundColor = choice.value;
